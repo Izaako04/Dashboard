@@ -14,6 +14,7 @@ interface Indicator {
 
 function App() {
 // const [count, setCount] = useState(0)
+let [indicators, setIndicators] = useState<Indicator[]>([])
 
   {/* Hook: useEffect */}
   useEffect(()=>{
@@ -52,20 +53,34 @@ function App() {
 
          console.log( dataToIndicators)
 
+         setIndicators( dataToIndicators )
+
     }
 
     request();
 
 },[])
 
+let renderIndicators = () => {
 
-  
-
+  return indicators
+          .map(
+              (indicator, idx) => (
+                  <Grid key={idx} size={{ xs: 12, xl: 3 }}>
+                      <IndicatorWeather 
+                          title={indicator["title"]} 
+                          subtitle={indicator["subtitle"]} 
+                          value={indicator["value"]} />
+                  </Grid>
+              )
+          )
+   
+}
 
   return (
     <Grid container spacing={5} >
 
-      {/* Indicadores */}
+      {/* Indicadores
       <Grid size={{xs: 12, md:3}}>
         <IndicatorWeather title={'Indicator 1'} subtitle={'Unidad 1'} value={"1.23"}/>
       </Grid>
@@ -77,7 +92,9 @@ function App() {
       </Grid>
       <Grid size={{xs: 12, md:3}}>
         <IndicatorWeather title={'Indicator 4'} subtitle={'Unidad 4'} value={"3.21"}/>
-      </Grid>
+      </Grid> */}
+
+      {renderIndicators()}
     
       {/* Tabla */}
       <Grid size={{ xs: 12, md: 8 }}>
