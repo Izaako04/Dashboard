@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
-import Grid from '@mui/material/Grid2';
 import './App.css'
+import Grid from '@mui/material/Grid2'
 import IndicatorWeather from './components/IndicatorWeather';
 import TableWeather from './components/TableWeather';
 import ControlWeather from './components/ControlWeather';
 import LineChartWeather from './components/LineChartWeather';
+import { useEffect, useState } from 'react';
+import Item from './interface/item';
 
 interface Indicator {
   title?: String;
@@ -13,109 +14,96 @@ interface Indicator {
 }
 
 function App() {
-// const [count, setCount] = useState(0)
-let [indicators, setIndicators] = useState<Indicator[]>([])
+  const [indicators, setIndicators] = useState<Indicator[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
 
-  {/* Hook: useEffect */}
-  useEffect(()=>{
+  useEffect(() => {
+    const request = async () => {
+      let API_KEY = "3f3a46be5b39afdf7737f3cc150923cb";
+      let response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Guayaquil&mode=xml&appid=${API_KEY}`);
+      let savedTextXML = await response.text();
 
-    let request = async () => {
+      // XML Parser
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(savedTextXML, "application/xml");
 
-        {/* Request */}
-        let API_KEY = "3f3a46be5b39afdf7737f3cc150923cb"
-        let response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Guayaquil&mode=xml&appid=${API_KEY}`)
-        let savedTextXML = await response.text();
+      let dataToIndicators: Indicator[] = [];
 
-         {/* XML Parser */}
-         const parser = new DOMParser();
-         const xml = parser.parseFromString(savedTextXML, "application/xml");
+      let name = xml.getElementsByTagName("name")[0].innerHTML || "";
+      dataToIndicators.push({ "title": "Location", "subtitle": "City", "value": name });
 
-         let dataToIndicators : Indicator[] = new Array<Indicator>();
+      let location = xml.getElementsByTagName("location")[1];
 
-         {/* 
-             Análisis, extracción y almacenamiento del contenido del XML 
-             en el arreglo de resultados
-         */}
+      let latitude = location.getAttribute("latitude") || "";
+      dataToIndicators.push({ "title": "Location", "subtitle": "Latitude", "value": latitude });
 
-         let name = xml.getElementsByTagName("name")[0].innerHTML || ""
-         dataToIndicators.push({"title":"Location", "subtitle": "City", "value": name})
+      let longitude = location.getAttribute("longitude") || "";
+      dataToIndicators.push({ "title": "Location", "subtitle": "Longitude", "value": longitude });
 
-         let location = xml.getElementsByTagName("location")[1]
+      let altitude = location.getAttribute("altitude") || "";
+      dataToIndicators.push({ "title": "Location", "subtitle": "Altitude", "value": altitude });
 
-         let latitude = location.getAttribute("latitude") || ""
-         dataToIndicators.push({ "title": "Location", "subtitle": "Latitude", "value": latitude })
+      console.log(dataToIndicators);
+      setIndicators(dataToIndicators);
 
-         let longitude = location.getAttribute("longitude") || ""
-         dataToIndicators.push({ "title": "Location", "subtitle": "Longitude", "value": longitude })
+      // Análisis del XML y almacenamiento de los primeros 6 objetos
+      const times = xml.getElementsByTagName("time");
+      let dataToItems: Item[] = [];
+      for (let i = 0; i < times.length && dataToItems.length < 6; i++) {
+        const time = times[i];
+        const dateStart = time.getAttribute("from") || "";
+        const dateEnd = time.getAttribute("to") || "";
+        const precipitation = time.getElementsByTagName("precipitation")[0].getAttribute("probability") || "";
+        const humidity = time.getElementsByTagName("humidity")[0].getAttribute("value") || "";
+        const clouds = time.getElementsByTagName("clouds")[0].getAttribute("value") || "";
 
-         let altitude = location.getAttribute("altitude") || ""
-         dataToIndicators.push({ "title": "Location", "subtitle": "Altitude", "value": altitude })
-
-         console.log( dataToIndicators)
-
-         setIndicators( dataToIndicators )
-
-    }
+        dataToItems.push({
+          dateStart,
+          dateEnd,
+          precipitation,
+          humidity,
+          clouds,
+        });
+      }
+      setItems(dataToItems);
+    };
 
     request();
+  }, []); // Asegúrate de que el segundo argumento del useEffect sea un arreglo vacío para que se ejecute una sola vez
 
-},[])
-
-let renderIndicators = () => {
-
-  return indicators
-          .map(
-              (indicator, idx) => (
-                  <Grid key={idx} size={{ xs: 12, xl: 3 }}>
-                      <IndicatorWeather 
-                          title={indicator["title"]} 
-                          subtitle={indicator["subtitle"]} 
-                          value={indicator["value"]} />
-                  </Grid>
-              )
-          )
-   
-}
+  const renderIndicators = () => {
+    return indicators.map((indicator, idx) => (
+      <Grid key={idx} size={{ xs: 12, xl: 3 }}>
+        <IndicatorWeather
+          title={indicator["title"]}
+          subtitle={indicator["subtitle"]}
+          value={indicator["value"]}
+        />
+      </Grid>
+    ));
+  };
 
   return (
-    <Grid container spacing={5} >
-
-      {/* Indicadores
-      <Grid size={{xs: 12, md:3}}>
-        <IndicatorWeather title={'Indicator 1'} subtitle={'Unidad 1'} value={"1.23"}/>
-      </Grid>
-      <Grid size={{xs: 12, md:3}}>
-        <IndicatorWeather title={'Indicator 2'} subtitle={'Unidad 2'} value={"3.12"}/>
-      </Grid>
-      <Grid size={{xs: 12, md:3}}>
-        <IndicatorWeather title={'Indicator 3'} subtitle={'Unidad 3'} value={"2.31"}/>
-      </Grid>
-      <Grid size={{xs: 12, md:3}}>
-        <IndicatorWeather title={'Indicator 4'} subtitle={'Unidad 4'} value={"3.21"}/>
-      </Grid> */}
-
+    <Grid container spacing={5}>
       {renderIndicators()}
-    
-      {/* Tabla */}
-      <Grid size={{ xs: 12, md: 8 }}>
-        <Grid container spacing={2}>
-            <Grid size={{ xs: 12, xl: 3 }}>
-                <ControlWeather/>
-            </Grid>
-            <Grid size={{ xs: 12, xl: 9 }}>
-                <TableWeather/>
-            </Grid>
+      <Grid size={{ xs: 12, xl: 8 }}></Grid>
+
+      {/* Grid Anidado */}
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, xl: 3 }}>
+          <ControlWeather />
+        </Grid>
+        <Grid size={{ xs: 12, xl: 9 }}>
+          <TableWeather itemsIn={items} />
         </Grid>
       </Grid>
-    
+
       {/* Gráfico */}
-      <Grid size={{ xs: 12, md: 4 }}>
-        <LineChartWeather/>
+      <Grid size={{ xs: 12, xl: 4 }}>
+        <LineChartWeather />
       </Grid>
-
-
     </Grid>
-  )
+  );
 }
 
-export default App
+export default App;
